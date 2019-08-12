@@ -124,8 +124,6 @@ static void get_wakeup_source(void *response, unsigned int suspend_from)
 	val = (AUTO_WAKEUP_SRC | REMOTE_WAKEUP_SRC |
 			RTC_WAKEUP_SRC | ETH_PHY_GPIO_SRC);
 
-	p->sources = val;
-
 #ifdef CONFIG_CEC_WAKEUP
 	val |= CECB_WAKEUP_SRC;
 #endif
@@ -169,6 +167,8 @@ static void get_wakeup_source(void *response, unsigned int suspend_from)
 		p->gpio_info_count = ++i;
 	}
 #endif
+
+	p->sources = val;
 }
 extern void __switch_idle_task(void);
 
@@ -217,7 +217,7 @@ static unsigned int detect_key(unsigned int suspend_from)
 		}
 
 #if defined(CONFIG_WOL) || defined(CONFIG_BT_WAKEUP)
-		if (enable_wol && (irq[IRQ_GPIO1] == IRQ_GPIO1_NUM)) {
+		if (enable_wol && (irq[IRQ_GPIO1] == CONFIG_WOL_IRQ)) {
 			irq[IRQ_GPIO1] = 0xFFFFFFFF;
 #ifdef CONFIG_WOL
 			if (!(readl(PREG_PAD_GPIO4_I) & (0x01 << CONFIG_WOL))
@@ -234,7 +234,7 @@ static unsigned int detect_key(unsigned int suspend_from)
 #endif
 
 #ifdef CONFIG_POWER_BUTTON
-		if (irq[IRQ_AO_GPIO0] == IRQ_AO_GPIO0_NUM) {
+		if (irq[IRQ_AO_GPIO0] == CONFIG_POWER_BUTTON_IRQ) {
 			irq[IRQ_AO_GPIO0] = 0xFFFFFFFF;
 			if ((readl(AO_GPIO_I) & (1<<CONFIG_POWER_BUTTON)) == 0)
 				exit_reason = POWER_KEY_WAKEUP;
