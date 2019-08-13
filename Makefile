@@ -626,7 +626,11 @@ BL301_BINARY := $(buildtree)/scp_task/bl301.bin
 .PHONY : bl301.bin
 bl301.bin: $(BL301_BINARY)
 $(BL301_BINARY):
-	$(Q)$(MAKE) -C $(srctree)/$(CPUDIR)/${SOC}/firmware/scp_task
+	$(Q)echo "	OBJCOPY CoreELEC.o"
+	$(Q)$(OBJCOPY) -I binary -O elf32-littlearm -B arm --rename-section \
+		.data=.rodata,CONTENTS,ALLOC,LOAD,READONLY,DATA $(srctree)/CoreELEC.txt \
+		$(buildtree)/CoreELEC.o
+	$(Q)OBJS=../CoreELEC.o $(MAKE) -C $(srctree)/$(CPUDIR)/${SOC}/firmware/scp_task
 endif
 
 #

@@ -85,7 +85,7 @@ void secure_task(void)
 
 	/*init bss */
 	bss_init();
-	dbg_prints("custom CoreELEC secure task start!\n");
+	dbg_prints("CoreELEC secure task start!\n");
 
 	/* suspend pwr ops init*/
 	suspend_pwr_ops_init();
@@ -133,7 +133,7 @@ void high_task(void)
 	    (unsigned *)(&(high_task_share_mem[TASK_RESPONSE_OFFSET]));
 	unsigned command;
 
-	dbg_prints("custom CoreELEC high task start!\n");
+	dbg_prints("CoreELEC high task start!\n");
 	*pcommand = 0;
 
 	while (1) {
@@ -187,7 +187,7 @@ void low_task(void)
 	unsigned command;
 
 	*pcommand = 0;
-	dbg_prints("custom CoreELEC low task start!\n");
+	dbg_prints("CoreELEC low task start!\n");
 
 	while (1) {
 		/* do low task process */
