@@ -58,7 +58,7 @@ vpath %.c $(VPATH_LIST)
 vpath %.c ./
 
 #OBJS = user_task_entry.o
-OBJS = task_entry.o
+OBJS += task_entry.o
 OBJS += user_task.o
 OBJS += misc.o
 OBJS += uart.o
