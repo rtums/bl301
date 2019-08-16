@@ -95,7 +95,7 @@ void secure_task(void)
 		/* do secure task process */
 		command = *pcommand;
 		if (command) {
-			dbg_print("process command ", command);
+			dbg_print("CoreELEC: process command ", command);
 			if (command == SEC_TASK_GET_WAKEUP_SRC) {
 				state = *(pcommand+1);
 				suspend_get_wakeup_source(
@@ -164,16 +164,16 @@ void process_low_task(unsigned command)
 	if ((command & 0xffff) == LOW_TASK_USR_DATA) {/*0-15bit: comd; 16-31bit: client_id*/
 		if ((command >> 16) == SCPI_CL_REMOTE) {
 			usr_pwr_key = *(pcommand + 2);/*tx_size locates at *(pcommand + 1)*/
-			dbg_print("pwr_key=",usr_pwr_key);
+			dbg_print("CoreELEC pwr_key=",usr_pwr_key);
 		} else if ((command >> 16) == SCPI_CL_IRPROTO) {
 			usr_ir_proto = *(pcommand + 2);
-			dbg_print("usr_ir_proto = ", usr_ir_proto);
+			dbg_print("CoreELEC usr_ir_proto = ", usr_ir_proto);
 		} else if ((command >> 16) == SCPI_CL_REMOTE_MASK) {
 			usr_pwr_key_mask = *(pcommand + 2);
-			dbg_print("pwr_key_mask = ", usr_pwr_key_mask);
+			dbg_print("CoreELEC pwr_key_mask = ", usr_pwr_key_mask);
 		} else if ((command >> 16) == SCPI_CL_WOL) {
 			enable_wol = *(pcommand + 2);
-			dbg_print("wake-on-lan = ", enable_wol);
+			dbg_print("CoreELEC wake-on-lan = ", enable_wol);
 		}
 	}
 }
