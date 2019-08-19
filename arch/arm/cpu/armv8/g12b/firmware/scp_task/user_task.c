@@ -40,6 +40,7 @@ enum scpi_client_id {
 	SCPI_CL_WOL,
 	SCPI_CL_IRPROTO,
 	SCPI_CL_REMOTE_MASK,
+	SCPI_CL_5V_SYSTEM_POWER,
 	SCPI_MAX,
 };
 
@@ -153,6 +154,7 @@ extern unsigned int usr_pwr_key;
 extern unsigned int usr_pwr_key_mask;
 extern unsigned int usr_ir_proto;
 extern unsigned int enable_wol;
+extern unsigned int enable_5V_system_power;
 
 void process_low_task(unsigned command)
 {
@@ -174,6 +176,9 @@ void process_low_task(unsigned command)
 		} else if ((command >> 16) == SCPI_CL_WOL) {
 			enable_wol = *(pcommand + 2);
 			dbg_print("CoreELEC wake-on-lan = ", enable_wol);
+		} else if ((command >> 16) == SCPI_CL_5V_SYSTEM_POWER) {
+			enable_5V_system_power = *(pcommand + 2);
+			dbg_print("CoreELEC system power = ", enable_5V_system_power);
 		}
 	}
 }
