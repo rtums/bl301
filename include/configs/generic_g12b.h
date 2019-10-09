@@ -44,6 +44,8 @@
 #define CONFIG_POWER_BUTTON_IRQ IRQ_AO_GPIO0_NUM
 #define CONFIG_POWER_BUTTON_EDGE GPIO_IRQ_FALLING_EDGE
 
+#define CONFIG_GPIO_WAKEUP
+
 /*if use bt-wakeup, open it*/
 /* Bluetooth: GPIOX_18 */
 //#define CONFIG_BT_WAKEUP GPIOX_18
