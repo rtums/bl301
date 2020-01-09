@@ -36,6 +36,10 @@ enum scpi_client_id {
 	SCPI_CL_POWER,
 	SCPI_CL_THERMAL,
 	SCPI_CL_REMOTE,
+	SCPI_CL_LED_TIMER,
+	SCPI_CL_WOL,
+	SCPI_CL_IRPROTO,
+	SCPI_CL_REMOTE_MASK,
 	SCPI_MAX,
 };
 
@@ -81,7 +85,7 @@ void secure_task(void)
 
 	/*init bss */
 	bss_init();
-	dbg_prints("secure task start!\n");
+	dbg_prints("CoreELEC secure task start!\n");
 
 	/* suspend pwr ops init*/
 	suspend_pwr_ops_init();
@@ -91,7 +95,7 @@ void secure_task(void)
 		/* do secure task process */
 		command = *pcommand;
 		if (command) {
-			dbg_print("process command ", command);
+			dbg_print("CoreELEC: process command ", command);
 			if (command == SEC_TASK_GET_WAKEUP_SRC) {
 				state = *(pcommand+1);
 				suspend_get_wakeup_source(
@@ -129,7 +133,7 @@ void high_task(void)
 	    (unsigned *)(&(high_task_share_mem[TASK_RESPONSE_OFFSET]));
 	unsigned command;
 
-	dbg_prints("high task start!\n");
+	dbg_prints("CoreELEC high task start!\n");
 	*pcommand = 0;
 
 	while (1) {
@@ -146,6 +150,10 @@ void high_task(void)
 }
 
 extern unsigned int usr_pwr_key;
+extern unsigned int usr_pwr_key_mask;
+extern unsigned int usr_ir_proto;
+extern unsigned int enable_wol;
+
 void process_low_task(unsigned command)
 {
 	unsigned *pcommand =
@@ -156,7 +164,16 @@ void process_low_task(unsigned command)
 	if ((command & 0xffff) == LOW_TASK_USR_DATA) {/*0-15bit: comd; 16-31bit: client_id*/
 		if ((command >> 16) == SCPI_CL_REMOTE) {
 			usr_pwr_key = *(pcommand + 2);/*tx_size locates at *(pcommand + 1)*/
-			dbg_print("pwr_key=",usr_pwr_key);
+			dbg_print("CoreELEC pwr_key=",usr_pwr_key);
+		} else if ((command >> 16) == SCPI_CL_IRPROTO) {
+			usr_ir_proto = *(pcommand + 2);
+			dbg_print("CoreELEC usr_ir_proto = ", usr_ir_proto);
+		} else if ((command >> 16) == SCPI_CL_REMOTE_MASK) {
+			usr_pwr_key_mask = *(pcommand + 2);
+			dbg_print("CoreELEC pwr_key_mask = ", usr_pwr_key_mask);
+		} else if ((command >> 16) == SCPI_CL_WOL) {
+			enable_wol = *(pcommand + 2);
+			dbg_print("CoreELEC wake-on-lan = ", enable_wol);
 		}
 	}
 }
@@ -170,7 +187,7 @@ void low_task(void)
 	unsigned command;
 
 	*pcommand = 0;
-	dbg_prints("low task start!\n");
+	dbg_prints("CoreELEC low task start!\n");
 
 	while (1) {
 		/* do low task process */

@@ -26,4 +26,11 @@
 #define CONFIG_DM_STDIO
 #endif
 
+/* other functions */
+#define CONFIG_NEED_BL301 1
+
+/*config the default parameters for adc power key*/
+#define CONFIG_ADC_POWER_KEY_CHAN   2  /*channel range: 0-7*/
+#define CONFIG_ADC_POWER_KEY_VAL    0  /*sample value range: 0-1023*/
+
 #endif

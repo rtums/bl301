@@ -38,6 +38,7 @@ CFLAGS_INCLUDE=-I$(buildsrc)/build/include/ \
 
 #VPATH_LIST=     $(buildsrc)/board/$(BOARDDIR)
 VPATH_LIST=     $(buildsrc)/$(BOARDDIR)
+VPATH_LIST:=    $(VPATH_LIST) $(buildsrc)/board/generic/g12b_generic
 
 VPATH_LIST:=$(VPATH_LIST:%=%/firmware/scp_task/)
 

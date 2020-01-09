@@ -562,59 +562,13 @@ c_flags := $(KBUILD_CFLAGS) $(cpp_flags)
 
 HAVE_VENDOR_COMMON_LIB = $(if $(wildcard $(srctree)/board/$(VENDOR)/common/Makefile),y,n)
 
-libs-y += lib/
-libs-$(HAVE_VENDOR_COMMON_LIB) += board/$(VENDOR)/common/
-libs-$(CONFIG_OF_EMBED) += dts/
-libs-y += fs/
-libs-y += net/
-libs-y += disk/
-libs-y += drivers/
-libs-y += drivers/dma/
-libs-y += drivers/gpio/
-libs-y += drivers/i2c/
-libs-y += drivers/mmc/
-libs-y += drivers/mtd/
-libs-$(CONFIG_AML_NAND) += drivers/nand/
-libs-$(CONFIG_CMD_NAND) += drivers/mtd/nand/
-libs-$(CONFIG_CMD_NAND) += drivers/mtd/nand/amlogic_mtd/
-libs-y += drivers/mtd/onenand/
-libs-$(CONFIG_CMD_UBI) += drivers/mtd/ubi/
-libs-y += drivers/mtd/spi/
-libs-y += drivers/net/
-libs-y += drivers/net/phy/
-libs-y += drivers/pci/
-libs-y += drivers/power/ \
-	drivers/power/fuel_gauge/ \
-	drivers/power/mfd/ \
-	drivers/power/pmic/ \
-	drivers/power/battery/
-libs-y += drivers/spi/
-libs-$(CONFIG_FMAN_ENET) += drivers/net/fm/
-libs-$(CONFIG_SYS_FSL_DDR) += drivers/ddr/fsl/
-libs-y += drivers/serial/
-libs-y += drivers/usb/eth/
-libs-y += drivers/usb/gadget/
-libs-y += drivers/usb/host/
-libs-y += drivers/usb/musb/
-libs-y += drivers/usb/musb-new/
-libs-y += drivers/usb/phy/
-libs-y += drivers/usb/ulpi/
-libs-y += common/
-libs-$(CONFIG_API) += api/
-libs-$(CONFIG_HAS_POST) += post/
-libs-y += test/
-libs-y += test/dm/
-
-#libs-y += $(if $(BOARDDIR),board/$(BOARDDIR)/)
 libs-y += $(if $(BOARDDIR),$(BOARDDIR)/)
 
 libs-y := $(sort $(libs-y))
 
-u-boot-dirs	:= $(patsubst %/,%,$(filter %/, $(libs-y))) tools examples
+u-boot-dirs	:= $(patsubst %/,%,$(filter %/, $(libs-y))) examples
 
 u-boot-alldirs	:= $(sort $(u-boot-dirs) $(patsubst %/,%,$(filter %/, $(libs-))))
-
-libs-y		:= $(patsubst %/, %/built-in.o, $(libs-y))
 
 u-boot-init := $(head-y)
 u-boot-main := $(libs-y)
@@ -635,43 +589,8 @@ DO_STATIC_RELA =
 endif
 
 # Always append ALL so that arch config.mk's can add custom ones
-ALL-y += u-boot.srec u-boot.bin System.map binary_size_check
-ALL-y += u-boot.hex
 ifeq ($(CONFIG_NEED_BL301), y)
 ALL-y += bl301.bin
-endif
-ALL-$(CONFIG_AML_DOLBY) += dovi
-ALL-$(CONFIG_ONENAND_U_BOOT) += u-boot-onenand.bin
-ifeq ($(CONFIG_SPL_FSL_PBL),y)
-ALL-$(CONFIG_RAMBOOT_PBL) += u-boot-with-spl-pbl.bin
-else
-ALL-$(CONFIG_RAMBOOT_PBL) += u-boot.pbl
-endif
-ALL-$(CONFIG_SPL) += spl/u-boot-spl.bin
-ALL-$(CONFIG_SPL_FRAMEWORK) += u-boot.img
-ALL-$(CONFIG_TPL) += tpl/u-boot-tpl.bin
-ALL-$(CONFIG_OF_SEPARATE) += u-boot.dtb u-boot-dtb.bin
-ifeq ($(CONFIG_SPL_FRAMEWORK),y)
-ALL-$(CONFIG_OF_SEPARATE) += u-boot-dtb.img
-endif
-ALL-$(CONFIG_OF_HOSTFILE) += u-boot.dtb
-ifneq ($(CONFIG_SPL_TARGET),)
-ALL-$(CONFIG_SPL) += $(CONFIG_SPL_TARGET:"%"=%)
-endif
-ALL-$(CONFIG_REMAKE_ELF) += u-boot.elf
-
-# We can't do this yet due to the need for binary blobs
-# ALL-$(CONFIG_X86_RESET_VECTOR) += u-boot.rom
-
-# enable combined SPL/u-boot/dtb rules for tegra
-ifneq ($(CONFIG_TEGRA),)
-ifeq ($(CONFIG_SPL),y)
-ifeq ($(CONFIG_OF_SEPARATE),y)
-ALL-y += u-boot-dtb-tegra.bin
-else
-ALL-y += u-boot-nodtb-tegra.bin
-endif
-endif
 endif
 
 # Add optional build target if defined in board/cpu/soc headers
@@ -708,87 +627,19 @@ ifneq ($(CONFIG_SYS_GENERIC_BOARD),y)
 	@echo "===================================================="
 endif
 
-PHONY += dtbs
-dtbs dts/dt.dtb: checkdtc u-boot
-	$(Q)$(MAKE) $(build)=dts dtbs
-
-u-boot-dtb.bin: u-boot.bin dts/dt.dtb FORCE
-	$(call if_changed,cat)
-
 %.imx: %.bin
 	$(Q)$(MAKE) $(build)=arch/arm/imx-common $@
 
 quiet_cmd_copy = COPY    $@
       cmd_copy = cp $< $@
 
-u-boot.dtb: dts/dt.dtb
-	$(call cmd,copy)
-
-OBJCOPYFLAGS_u-boot.hex := -O ihex
-
-OBJCOPYFLAGS_u-boot.srec := -O srec
-
-u-boot.hex u-boot.srec: u-boot FORCE
-	$(call if_changed,objcopy)
-
-OBJCOPYFLAGS_u-boot.bin := -O binary \
-		$(if $(CONFIG_X86_RESET_VECTOR),-R .start16 -R .resetvec)
-
-binary_size_check: u-boot.bin FORCE
-	@file_size=$(shell wc -c u-boot.bin | awk '{print $$1}') ; \
-	map_size=$(shell cat u-boot.map | \
-		awk '/_image_copy_start/ {start = $$1} /_image_binary_end/ {end = $$1} END {if (start != "" && end != "") print "ibase=16; " toupper(end) " - " toupper(start)}' \
-		| sed 's/0X//g' \
-		| bc); \
-	if [ "" != "$$map_size" ]; then \
-		if test $$map_size -ne $$file_size; then \
-			echo "u-boot.map shows a binary size of $$map_size" >&2 ; \
-			echo "  but u-boot.bin shows $$file_size" >&2 ; \
-			exit 1; \
-		fi \
-	fi
-
-u-boot.bin: u-boot FORCE
-	$(call if_changed,objcopy)
-	@$(call DO_STATIC_RELA,$<,$@,$(CONFIG_SYS_TEXT_BASE))
-	$(BOARD_SIZE_CHECK)
-
-u-boot.ldr:	u-boot
-		$(CREATE_LDR_ENV)
-		$(LDR) -T $(CONFIG_CPU) -c $@ $< $(LDR_FLAGS)
-		$(BOARD_SIZE_CHECK)
-
-OBJCOPYFLAGS_u-boot.ldr.hex := -I binary -O ihex
-
-OBJCOPYFLAGS_u-boot.ldr.srec := -I binary -O srec
-
-u-boot.ldr.hex u-boot.ldr.srec: u-boot.ldr FORCE
-	$(call if_changed,objcopy)
-
-.PHONY: u-boot-comp.bin
-u-boot-comp.bin:u-boot.bin
-	#tools/uclpack $< $@
-	cp $< $@
-#	$(objtree)/tools/uclpack $< $@
 
 ifeq ($(CONFIG_NEED_BL301), y)
+BL301_BINARY := $(buildtree)/scp_task/bl301.bin
 .PHONY : bl301.bin
-bl301.bin: tools prepare acs.bin bl21.bin
+bl301.bin: $(BL301_BINARY)
+$(BL301_BINARY):
 	$(Q)$(MAKE) -C $(srctree)/$(CPUDIR)/${SOC}/firmware/scp_task
-endif
-
-.PHONY : acs.bin
-acs.bin: tools prepare u-boot.bin
-	$(Q)$(MAKE) -C $(srctree)/$(CPUDIR)/${SOC}/firmware/acs all FIRMWARE=$@
-
-.PHONY : bl21.bin
-bl21.bin: tools prepare u-boot.bin acs.bin
-	$(Q)$(MAKE) -C $(srctree)/$(CPUDIR)/${SOC}/firmware/bl21 all FIRMWARE=$@
-
-.PHONY : dovi
-dovi: tools prepare u-boot
-ifeq ($(CONFIG_AML_DOLBY), y)
-	$(Q)$(MAKE) -C $(srctree)/drivers/display/osd/dv dovi.o
 endif
 
 #
@@ -797,242 +648,6 @@ endif
 #
 ifndef CONFIG_SYS_UBOOT_START
 CONFIG_SYS_UBOOT_START := 0
-endif
-
-MKIMAGEFLAGS_u-boot.img = -A $(ARCH) -T firmware -C none -O u-boot \
-	-a $(CONFIG_SYS_TEXT_BASE) -e $(CONFIG_SYS_UBOOT_START) \
-	-n "U-Boot $(UBOOTRELEASE) for $(BOARD) board"
-
-MKIMAGEFLAGS_u-boot.kwb = -n $(srctree)/$(CONFIG_SYS_KWD_CONFIG:"%"=%) \
-	-T kwbimage -a $(CONFIG_SYS_TEXT_BASE) -e $(CONFIG_SYS_TEXT_BASE)
-
-MKIMAGEFLAGS_u-boot.pbl = -n $(srctree)/$(CONFIG_SYS_FSL_PBL_RCW:"%"=%) \
-		-R $(srctree)/$(CONFIG_SYS_FSL_PBL_PBI:"%"=%) -T pblimage
-
-u-boot.img u-boot.kwb u-boot.pbl: u-boot.bin FORCE
-	$(call if_changed,mkimage)
-
-MKIMAGEFLAGS_u-boot-dtb.img = $(MKIMAGEFLAGS_u-boot.img)
-
-u-boot-dtb.img: u-boot-dtb.bin FORCE
-	$(call if_changed,mkimage)
-
-u-boot.sha1:	u-boot.bin
-		tools/ubsha1 u-boot.bin
-
-u-boot.dis:	u-boot
-		$(OBJDUMP) -d $< > $@
-
-ifdef CONFIG_TPL
-SPL_PAYLOAD := tpl/u-boot-with-tpl.bin
-else
-SPL_PAYLOAD := u-boot.bin
-endif
-
-OBJCOPYFLAGS_u-boot-with-spl.bin = -I binary -O binary \
-				   --pad-to=$(CONFIG_SPL_PAD_TO)
-u-boot-with-spl.bin: spl/u-boot-spl.bin $(SPL_PAYLOAD) FORCE
-	$(call if_changed,pad_cat)
-
-OBJCOPYFLAGS_u-boot-with-tpl.bin = -I binary -O binary \
-				   --pad-to=$(CONFIG_TPL_PAD_TO)
-tpl/u-boot-with-tpl.bin: tpl/u-boot-tpl.bin u-boot.bin FORCE
-	$(call if_changed,pad_cat)
-
-SPL: spl/u-boot-spl.bin FORCE
-	$(Q)$(MAKE) $(build)=arch/arm/imx-common $@
-
-u-boot-with-spl.imx u-boot-with-nand-spl.imx: SPL u-boot.bin FORCE
-	$(Q)$(MAKE) $(build)=arch/arm/imx-common $@
-
-MKIMAGEFLAGS_u-boot.ubl = -n $(UBL_CONFIG) -T ublimage -e $(CONFIG_SYS_TEXT_BASE)
-
-u-boot.ubl: u-boot-with-spl.bin FORCE
-	$(call if_changed,mkimage)
-
-MKIMAGEFLAGS_u-boot-spl.ais = -s -n $(if $(CONFIG_AIS_CONFIG_FILE), \
-	$(srctree)/$(CONFIG_AIS_CONFIG_FILE:"%"=%),"/dev/null") \
-	-T aisimage -e $(CONFIG_SPL_TEXT_BASE)
-spl/u-boot-spl.ais: spl/u-boot-spl.bin FORCE
-	$(call if_changed,mkimage)
-
-OBJCOPYFLAGS_u-boot.ais = -I binary -O binary --pad-to=$(CONFIG_SPL_PAD_TO)
-u-boot.ais: spl/u-boot-spl.ais u-boot.img FORCE
-	$(call if_changed,pad_cat)
-
-u-boot-signed.sb: u-boot.bin spl/u-boot-spl.bin
-	$(Q)$(MAKE) $(build)=arch/arm/cpu/arm926ejs/mxs u-boot-signed.sb
-u-boot.sb: u-boot.bin spl/u-boot-spl.bin
-	$(Q)$(MAKE) $(build)=arch/arm/cpu/arm926ejs/mxs u-boot.sb
-
-# On x600 (SPEAr600) U-Boot is appended to U-Boot SPL.
-# Both images are created using mkimage (crc etc), so that the ROM
-# bootloader can check its integrity. Padding needs to be done to the
-# SPL image (with mkimage header) and not the binary. Otherwise the resulting image
-# which is loaded/copied by the ROM bootloader to SRAM doesn't fit.
-# The resulting image containing both U-Boot images is called u-boot.spr
-MKIMAGEFLAGS_u-boot-spl.img = -A $(ARCH) -T firmware -C none \
-	-a $(CONFIG_SPL_TEXT_BASE) -e $(CONFIG_SPL_TEXT_BASE) -n XLOADER
-spl/u-boot-spl.img: spl/u-boot-spl.bin FORCE
-	$(call if_changed,mkimage)
-
-OBJCOPYFLAGS_u-boot.spr = -I binary -O binary --pad-to=$(CONFIG_SPL_PAD_TO) \
-			  --gap-fill=0xff
-u-boot.spr: spl/u-boot-spl.img u-boot.img FORCE
-	$(call if_changed,pad_cat)
-
-MKIMAGEFLAGS_u-boot-spl.gph = -A $(ARCH) -T gpimage -C none \
-	-a $(CONFIG_SPL_TEXT_BASE) -e $(CONFIG_SPL_TEXT_BASE) -n SPL
-spl/u-boot-spl.gph: spl/u-boot-spl.bin FORCE
-	$(call if_changed,mkimage)
-
-OBJCOPYFLAGS_u-boot-spi.gph = -I binary -O binary --pad-to=$(CONFIG_SPL_PAD_TO) \
-			  --gap-fill=0
-u-boot-spi.gph: spl/u-boot-spl.gph u-boot.img FORCE
-	$(call if_changed,pad_cat)
-
-MKIMAGEFLAGS_u-boot-nand.gph = -A $(ARCH) -T gpimage -C none \
-	-a $(CONFIG_SYS_TEXT_BASE) -e $(CONFIG_SYS_TEXT_BASE) -n U-Boot
-u-boot-nand.gph: u-boot.bin FORCE
-	$(call if_changed,mkimage)
-	@dd if=/dev/zero bs=8 count=1 2>/dev/null >> $@
-
-# x86 uses a large ROM. We fill it with 0xff, put the 16-bit stuff (including
-# reset vector) at the top, Intel ME descriptor at the bottom, and U-Boot in
-# the middle.
-ifneq ($(CONFIG_X86_RESET_VECTOR),)
-rom: u-boot.rom FORCE
-
-IFDTOOL=$(objtree)/tools/ifdtool
-IFDTOOL_FLAGS  = -f 0:$(objtree)/u-boot.dtb
-IFDTOOL_FLAGS += -m 0x$(shell $(NM) u-boot |grep _dt_ucode_base_size |cut -d' ' -f1)
-IFDTOOL_FLAGS += -U $(CONFIG_SYS_TEXT_BASE):$(objtree)/u-boot.bin
-IFDTOOL_FLAGS += -w $(CONFIG_SYS_X86_START16):$(objtree)/u-boot-x86-16bit.bin
-
-ifneq ($(CONFIG_HAVE_INTEL_ME),)
-IFDTOOL_ME_FLAGS  = -D $(srctree)/board/$(BOARDDIR)/descriptor.bin
-IFDTOOL_ME_FLAGS += -i ME:$(srctree)/board/$(BOARDDIR)/me.bin
-endif
-
-ifneq ($(CONFIG_HAVE_MRC),)
-IFDTOOL_FLAGS += -w $(CONFIG_X86_MRC_ADDR):$(srctree)/board/$(BOARDDIR)/mrc.bin
-endif
-
-ifneq ($(CONFIG_HAVE_FSP),)
-IFDTOOL_FLAGS += -w $(CONFIG_FSP_ADDR):$(srctree)/board/$(BOARDDIR)/$(CONFIG_FSP_FILE)
-endif
-
-ifneq ($(CONFIG_HAVE_CMC),)
-IFDTOOL_FLAGS += -w $(CONFIG_CMC_ADDR):$(srctree)/board/$(BOARDDIR)/$(CONFIG_CMC_FILE)
-endif
-
-ifneq ($(CONFIG_X86_OPTION_ROM_ADDR),)
-IFDTOOL_FLAGS += -w $(CONFIG_X86_OPTION_ROM_ADDR):$(srctree)/board/$(BOARDDIR)/$(CONFIG_X86_OPTION_ROM_FILE)
-endif
-
-quiet_cmd_ifdtool = IFDTOOL $@
-cmd_ifdtool  = $(IFDTOOL) -c -r $(CONFIG_ROM_SIZE) u-boot.tmp;
-ifneq ($(CONFIG_HAVE_INTEL_ME),)
-cmd_ifdtool += $(IFDTOOL) $(IFDTOOL_ME_FLAGS) u-boot.tmp;
-endif
-cmd_ifdtool += $(IFDTOOL) $(IFDTOOL_FLAGS) u-boot.tmp;
-cmd_ifdtool += mv u-boot.tmp $@
-
-u-boot.rom: u-boot-x86-16bit.bin u-boot-dtb.bin
-	$(call if_changed,ifdtool)
-
-OBJCOPYFLAGS_u-boot-x86-16bit.bin := -O binary -j .start16 -j .resetvec
-u-boot-x86-16bit.bin: u-boot FORCE
-	$(call if_changed,objcopy)
-endif
-
-ifneq ($(CONFIG_SUNXI),)
-OBJCOPYFLAGS_u-boot-sunxi-with-spl.bin = -I binary -O binary \
-				   --pad-to=$(CONFIG_SPL_PAD_TO) --gap-fill=0xff
-u-boot-sunxi-with-spl.bin: spl/sunxi-spl.bin \
-			u-boot$(if $(CONFIG_OF_CONTROL),-dtb,).img FORCE
-	$(call if_changed,pad_cat)
-endif
-
-ifneq ($(CONFIG_TEGRA),)
-OBJCOPYFLAGS_u-boot-nodtb-tegra.bin = -O binary --pad-to=$(CONFIG_SYS_TEXT_BASE)
-u-boot-nodtb-tegra.bin: spl/u-boot-spl u-boot.bin FORCE
-	$(call if_changed,pad_cat)
-
-ifeq ($(CONFIG_OF_SEPARATE),y)
-u-boot-dtb-tegra.bin: u-boot-nodtb-tegra.bin dts/dt.dtb FORCE
-	$(call if_changed,cat)
-endif
-endif
-
-u-boot-img.bin: spl/u-boot-spl.bin u-boot.img FORCE
-	$(call if_changed,cat)
-
-#Add a target to create boot binary having SPL binary in PBI format
-#concatenated with u-boot binary. It is need by PowerPC SoC having
-#internal SRAM <= 512KB.
-MKIMAGEFLAGS_u-boot-spl.pbl = -n $(srctree)/$(CONFIG_SYS_FSL_PBL_RCW:"%"=%) \
-		-R $(srctree)/$(CONFIG_SYS_FSL_PBL_PBI:"%"=%) -T pblimage \
-		-A $(ARCH) -a $(CONFIG_SPL_TEXT_BASE)
-
-spl/u-boot-spl.pbl: spl/u-boot-spl.bin FORCE
-	$(call if_changed,mkimage)
-
-ifeq ($(ARCH),arm)
-UBOOT_BINLOAD := u-boot.img
-else
-UBOOT_BINLOAD := u-boot.bin
-endif
-
-OBJCOPYFLAGS_u-boot-with-spl-pbl.bin = -I binary -O binary --pad-to=$(CONFIG_SPL_PAD_TO) \
-			  --gap-fill=0xff
-
-u-boot-with-spl-pbl.bin: spl/u-boot-spl.pbl $(UBOOT_BINLOAD) FORCE
-	$(call if_changed,pad_cat)
-
-# PPC4xx needs the SPL at the end of the image, since the reset vector
-# is located at 0xfffffffc. So we can't use the "u-boot-img.bin" target
-# and need to introduce a new build target with the full blown U-Boot
-# at the start padded up to the start of the SPL image. And then concat
-# the SPL image to the end.
-
-OBJCOPYFLAGS_u-boot-img-spl-at-end.bin := -I binary -O binary \
-	--pad-to=$(CONFIG_UBOOT_PAD_TO) --gap-fill=0xff
-u-boot-img-spl-at-end.bin: u-boot.img spl/u-boot-spl.bin FORCE
-	$(call if_changed,pad_cat)
-
-# Create a new ELF from a raw binary file.  This is useful for arm64
-# where static relocation needs to be performed on the raw binary,
-# but certain simulators only accept an ELF file (but don't do the
-# relocation).
-# FIXME refactor dts/Makefile to share target/arch detection
-u-boot.elf: u-boot.bin
-	@$(OBJCOPY)  -B aarch64 -I binary -O elf64-littleaarch64 \
-		$< u-boot-elf.o
-	@$(LD) u-boot-elf.o -o $@ \
-		--defsym=_start=$(CONFIG_SYS_TEXT_BASE) \
-		-Ttext=$(CONFIG_SYS_TEXT_BASE)
-
-# Rule to link u-boot
-# May be overridden by arch/$(ARCH)/config.mk
-quiet_cmd_u-boot__ ?= LD      $@
-      cmd_u-boot__ ?= $(LD) $(LDFLAGS) $(LDFLAGS_u-boot) -o $@ \
-      -T u-boot.lds $(u-boot-init)                             \
-      --start-group $(u-boot-main) --end-group                 \
-      $(PLATFORM_LIBS) -Map u-boot.map
-
-quiet_cmd_smap = GEN     common/system_map.o
-cmd_smap = \
-	smap=`$(call SYSTEM_MAP,u-boot) | \
-		awk '$$2 ~ /[tTwW]/ {printf $$1 $$3 "\\\\000"}'` ; \
-	$(CC) $(c_flags) -DSYSTEM_MAP="\"$${smap}\"" \
-		-c $(srctree)/common/system_map.c -o common/system_map.o
-
-u-boot:	dovi $(u-boot-init) $(u-boot-main) u-boot.lds
-	$(call if_changed,u-boot__)
-ifeq ($(CONFIG_KALLSYMS),y)
-	$(call cmd,smap)
-	$(call cmd,u-boot__) common/system_map.o
 endif
 
 # The actual objects are generated when descending,
@@ -1046,12 +661,9 @@ $(sort $(u-boot-init) $(u-boot-main)): $(u-boot-dirs) ;
 # Error messages still appears in the original language
 
 PHONY += $(u-boot-dirs)
-$(u-boot-dirs): prepare scripts
+$(u-boot-dirs): prepare
 	$(Q)$(MAKE) $(build)=$@
 
-tools: prepare
-# The "tools" are needed early
-$(filter-out tools, $(u-boot-dirs)): tools
 # The "examples" conditionally depend on U-Boot (say, when USE_PRIVATE_LIBGCC
 # is "yes"), so compile examples after U-Boot is compiled.
 examples: $(filter-out examples, $(u-boot-dirs))
@@ -1104,7 +716,7 @@ ifeq ($(wildcard $(LDSCRIPT)),)
 	@/bin/false
 endif
 
-archprepare: prepare1 scripts_basic
+archprepare: prepare1
 
 prepare0: archprepare FORCE
 	$(Q)$(MAKE) $(build)=.
@@ -1142,87 +754,7 @@ PHONY += depend dep
 depend dep:
 	@echo '*** Warning: make $@ is unnecessary now.'
 
-# ---------------------------------------------------------------------------
-quiet_cmd_cpp_lds = LDS     $@
-cmd_cpp_lds = $(CPP) -Wp,-MD,$(depfile) $(cpp_flags) $(LDPPFLAGS) -ansi \
-		-D__ASSEMBLY__ -x assembler-with-cpp -P -o $@ $<
 
-u-boot.lds: $(LDSCRIPT) prepare FORCE
-	$(call if_changed_dep,cpp_lds)
-
-spl/u-boot-spl.bin: spl/u-boot-spl
-	@:
-spl/u-boot-spl: tools prepare
-	$(Q)$(MAKE) obj=spl -f $(srctree)/scripts/Makefile.spl all
-
-spl/sunxi-spl.bin: spl/u-boot-spl
-	@:
-
-tpl/u-boot-tpl.bin: tools prepare
-	$(Q)$(MAKE) obj=tpl -f $(srctree)/scripts/Makefile.spl all
-
-TAG_SUBDIRS := $(patsubst %,$(srctree)/%,$(u-boot-dirs) include)
-
-FIND := find
-FINDFLAGS := -L
-
-tags ctags:
-		ctags -w -o ctags `$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) \
-						-name '*.[chS]' -print`
-
-etags:
-		etags -a -o etags `$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) \
-						-name '*.[chS]' -print`
-cscope:
-		$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) -name '*.[chS]' -print > \
-						cscope.files
-		cscope -b -q -k
-
-SYSTEM_MAP = \
-		$(NM) $1 | \
-		grep -v '\(compiled\)\|\(\.o$$\)\|\( [aUw] \)\|\(\.\.ng$$\)\|\(LASH[RL]DI\)' | \
-		LC_ALL=C sort
-System.map:	u-boot
-		@$(call SYSTEM_MAP,$<) > $@
-
-checkdtc:
-	@if test $(call dtc-version) -lt 0104; then \
-		echo '*** Your dtc is too old, please upgrade to dtc 1.4 or newer'; \
-		false; \
-	fi
-
-#########################################################################
-
-# ARM relocations should all be R_ARM_RELATIVE (32-bit) or
-# R_AARCH64_RELATIVE (64-bit).
-checkarmreloc: u-boot
-	@RELOC="`$(CROSS_COMPILE)readelf -r -W $< | cut -d ' ' -f 4 | \
-		grep R_A | sort -u`"; \
-	if test "$$RELOC" != "R_ARM_RELATIVE" -a \
-		 "$$RELOC" != "R_AARCH64_RELATIVE"; then \
-		echo "$< contains unexpected relocations: $$RELOC"; \
-		false; \
-	fi
-
-env: scripts_basic
-	$(Q)$(MAKE) $(build)=tools/$@
-
-tools-only: scripts_basic $(version_h) $(timestamp_h)
-	$(Q)$(MAKE) $(build)=tools
-
-tools-all: export HOST_TOOLS_ALL=y
-tools-all: env tools ;
-
-cross_tools: export CROSS_BUILD_TOOLS=y
-cross_tools: tools ;
-
-.PHONY : CHANGELOG
-CHANGELOG:
-	git log --no-merges U-Boot-1_1_5.. | \
-	unexpand -a | sed -e 's/\s\s*$$//' > $@
-
-include/license.h: tools/bin2header COPYING
-	cat COPYING | gzip -9 -c | ./tools/bin2header license_gzip > include/license.h
 #########################################################################
 
 ###
@@ -1369,67 +901,6 @@ help:
 
 endif #ifeq ($(config-targets),1)
 endif #ifeq ($(mixed-targets),1)
-
-PHONY += checkstack ubootrelease ubootversion
-
-checkstack:
-	$(OBJDUMP) -d u-boot $$(find . -name u-boot-spl) | \
-	$(PERL) $(src)/scripts/checkstack.pl $(ARCH)
-
-ubootrelease:
-	@echo "$(UBOOTVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))"
-
-ubootversion:
-	@echo $(UBOOTVERSION)
-
-# Single targets
-# ---------------------------------------------------------------------------
-# Single targets are compatible with:
-# - build with mixed source and output
-# - build with separate output dir 'make O=...'
-# - external modules
-#
-#  target-dir => where to store outputfile
-#  build-dir  => directory in kernel source tree to use
-
-ifeq ($(KBUILD_EXTMOD),)
-        build-dir  = $(patsubst %/,%,$(dir $@))
-        target-dir = $(dir $@)
-else
-        zap-slash=$(filter-out .,$(patsubst %/,%,$(dir $@)))
-        build-dir  = $(KBUILD_EXTMOD)$(if $(zap-slash),/$(zap-slash))
-        target-dir = $(if $(KBUILD_EXTMOD),$(dir $<),$(dir $@))
-endif
-
-%.s: %.c prepare scripts FORCE
-	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-%.i: %.c prepare scripts FORCE
-	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-%.o: %.c prepare scripts FORCE
-	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-%.lst: %.c prepare scripts FORCE
-	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-%.s: %.S prepare scripts FORCE
-	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-%.o: %.S prepare scripts FORCE
-	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-%.symtypes: %.c prepare scripts FORCE
-	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-
-# Modules
-/: prepare scripts FORCE
-	$(cmd_crmodverdir)
-	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
-	$(build)=$(build-dir)
-%/: prepare scripts FORCE
-	$(cmd_crmodverdir)
-	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
-	$(build)=$(build-dir)
-%.ko: prepare scripts FORCE
-	$(cmd_crmodverdir)
-	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1)   \
-	$(build)=$(build-dir) $(@:.ko=.o)
-	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost
 
 # FIXME Should go into a make.lib or something
 # ===========================================================================

@@ -1,0 +1,21 @@
+
+config GENERIC_G12B
+	bool "Support Generic g12b board"
+	default n
+
+config KHADAS_COMMON
+	bool
+	default n
+
+config KHADAS_VIM3
+	bool "Support Khadas VIM3 board"
+	select KHADAS_COMMON
+	default n
+
+if GENERIC_G12B
+source "board/generic/g12b/Kconfig"
+endif
+
+if KHADAS_VIM3
+source "board/khadas/kvim3/Kconfig"
+endif
