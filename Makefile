@@ -225,31 +225,11 @@ unexport CDPATH
 #########################################################################
 
 HOSTARCH := $(shell uname -m | \
-	sed -e s/i.86/x86/ \
-	    -e s/sun4u/sparc64/ \
-	    -e s/arm.*/arm/ \
-	    -e s/sa110/arm/ \
-	    -e s/ppc64/powerpc/ \
-	    -e s/ppc/powerpc/ \
-	    -e s/macppc/powerpc/\
-	    -e s/sh.*/sh/)
-
-HOSTOS := $(shell uname -s | tr '[:upper:]' '[:lower:]' | \
-	    sed -e 's/\(cygwin\).*/cygwin/')
+	sed -e s/arm.*/arm/)
 
 export	HOSTARCH HOSTOS
 
 #########################################################################
-
-# set default to nothing for native builds
-ifeq ($(HOSTARCH),$(ARCH))
-CROSS_COMPILE ?=
-endif
-
-CROSS_COMPILE ?= /opt/gcc-linaro-aarch64-none-elf-4.8-2013.11_linux/bin/aarch64-none-elf-
-CROSS_COMPILE_T32 ?= /opt/gcc-arm-none-eabi-6-2017-q2-update/bin/arm-none-eabi-
-export CROSS_COMPILE
-export CROSS_COMPILE_T32
 
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
@@ -263,35 +243,6 @@ HOSTCC       = cc
 HOSTCXX      = c++
 HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer
 HOSTCXXFLAGS = -O2
-
-ifeq ($(HOSTOS),cygwin)
-HOSTCFLAGS	+= -ansi
-endif
-
-# Mac OS X / Darwin's C preprocessor is Apple specific.  It
-# generates numerous errors and warnings.  We want to bypass it
-# and use GNU C's cpp.	To do this we pass the -traditional-cpp
-# option to the compiler.  Note that the -traditional-cpp flag
-# DOES NOT have the same semantics as GNU C's flag, all it does
-# is invoke the GNU preprocessor in stock ANSI/ISO C fashion.
-#
-# Apple's linker is similar, thanks to the new 2 stage linking
-# multiple symbol definitions are treated as errors, hence the
-# -multiply_defined suppress option to turn off this error.
-#
-ifeq ($(HOSTOS),darwin)
-# get major and minor product version (e.g. '10' and '6' for Snow Leopard)
-DARWIN_MAJOR_VERSION	= $(shell sw_vers -productVersion | cut -f 1 -d '.')
-DARWIN_MINOR_VERSION	= $(shell sw_vers -productVersion | cut -f 2 -d '.')
-
-os_x_before	= $(shell if [ $(DARWIN_MAJOR_VERSION) -le $(1) -a \
-	$(DARWIN_MINOR_VERSION) -le $(2) ] ; then echo "$(3)"; else echo "$(4)"; fi ;)
-
-# Snow Leopards build environment has no longer restrictions as described above
-HOSTCC       = $(call os_x_before, 10, 5, "cc", "gcc")
-HOSTCFLAGS  += $(call os_x_before, 10, 4, "-traditional-cpp")
-HOSTLDFLAGS += $(call os_x_before, 10, 5, "-multiply_defined suppress")
-endif
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -363,10 +314,6 @@ KBUILD_CFLAGS   := -Wall -Wstrict-prototypes \
 		   -Wno-format-security \
 		   -fno-builtin -ffreestanding
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-
-# Read UBOOTRELEASE from include/config/uboot.release (if it exists)
-UBOOTRELEASE = $(shell cat include/config/uboot.release 2> /dev/null)
-UBOOTVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))$(EXTRAVERSION)
 
 export VERSION PATCHLEVEL SUBLEVEL UBOOTRELEASE UBOOTVERSION
 export ARCH CPU BOARD VENDOR SOC CPUDIR BOARDDIR
@@ -673,42 +620,8 @@ u-boot-init := $(head-y)
 u-boot-main := $(libs-y)
 
 
-# Add GCC lib
-ifeq ($(CONFIG_USE_PRIVATE_LIBGCC),y)
-PLATFORM_LIBGCC = arch/$(ARCH)/lib/lib.a
-else
-PLATFORM_LIBGCC := -L $(shell dirname `$(CC) $(c_flags) -print-libgcc-file-name`) -lgcc
-endif
-PLATFORM_LIBS += $(PLATFORM_LIBGCC)
-export PLATFORM_LIBS
-export PLATFORM_LIBGCC
-
-# Special flags for CPP when processing the linker script.
-# Pass the version down so we can handle backwards compatibility
-# on the fly.
-LDPPFLAGS += \
-	-include $(srctree)/include/u-boot/u-boot.lds.h \
-	-DCPUDIR=$(CPUDIR) \
-	$(shell $(LD) --version | \
-	  sed -ne 's/GNU ld version \([0-9][0-9]*\)\.\([0-9][0-9]*\).*/-DLD_MAJOR=\1 -DLD_MINOR=\2/p')
-
 #########################################################################
 #########################################################################
-
-ifneq ($(CONFIG_BOARD_SIZE_LIMIT),)
-BOARD_SIZE_CHECK = \
-	@actual=`wc -c $@ | awk '{print $$1}'`; \
-	limit=`printf "%d" $(CONFIG_BOARD_SIZE_LIMIT)`; \
-	if test $$actual -gt $$limit; then \
-		echo "$@ exceeds file size limit:" >&2 ; \
-		echo "  limit:  $$limit bytes" >&2 ; \
-		echo "  actual: $$actual bytes" >&2 ; \
-		echo "  excess: $$((actual - limit)) bytes" >&2; \
-		exit 1; \
-	fi
-else
-BOARD_SIZE_CHECK =
-endif
 
 # Statically apply RELA-style relocations (currently arm64 only)
 ifneq ($(CONFIG_STATIC_RELA),)
@@ -1453,11 +1366,6 @@ help:
 %docs: scripts_basic FORCE
 	$(Q)$(MAKE) $(build)=scripts build_docproc
 	$(Q)$(MAKE) $(build)=doc/DocBook $@
-
-# Dummies...
-PHONY += prepare scripts
-prepare: ;
-scripts: ;
 
 endif #ifeq ($(config-targets),1)
 endif #ifeq ($(mixed-targets),1)

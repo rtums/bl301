@@ -85,7 +85,7 @@ do_silentoldconfig () {
 
 	# If the following part fails, include/config/auto.conf should be
 	# deleted so "make silentoldconfig" will be re-run on the next build.
-	autoconf include include/autoconf.mk include/autoconf.mk.dep || {
+	autoconf include include/autoconf.mk || {
 		rm -f include/config/auto.conf
 		exit 1
 	}
