@@ -20,12 +20,12 @@
 */
 
 #include <gpio.h>
-#include "pwm_ctrl.h"
+#include "g12b_generic_pwm_ctrl.h"
 #ifdef CONFIG_GPIO_WAKEUP
 #include <gpio_key.h>
 #endif
 
-#include <generic_pwr_ctrl.c>
+#include <g12b_generic_pwr_ctrl.c>
 
 static void set_gpio_level(int pin, int high)
 {
@@ -119,6 +119,6 @@ static void power_off_at_mcu(unsigned int shutdown)
 
 static void pwr_op_init(struct pwr_op *pwr_op)
 {
-	generic_pwr_op_init(pwr_op);
+	g12b_generic_pwr_op_init(pwr_op);
 	pwr_op->power_off_at_mcu = power_off_at_mcu;
 }

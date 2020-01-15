@@ -17,13 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-/*
- * Currently supported devices:
- * Beelink GT King
-*/
-
-#ifndef __GENERIC_G12B_H__
-#define __GENERIC_G12B_H__
+#ifndef __GENERIC_SM1_H__
+#define __GENERIC_SM1_H__
 
 #include <asm/arch/cpu.h>
 
@@ -59,7 +54,7 @@
 
 /*if device have a vcck_a power enable, open it*/
 /* vcck_a: GPIOAO_4*/
-#define CONFIG_VCCKA_GPIO GPIOAO_4
+//#define CONFIG_VCCKA_GPIO GPIOAO_4
 
 //Enable ir remote wake up for bl30
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0xFFFFFFFF
@@ -72,4 +67,4 @@
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL8 0xFFFFFFFF
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL9 0xFFFFFFFF
 
-#endif // __GENERIC_G12B_H__
+#endif // __GENERIC_SM1_H__

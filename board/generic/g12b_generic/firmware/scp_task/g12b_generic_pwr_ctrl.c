@@ -1,6 +1,6 @@
 
 /*
- * board/generic/g12b_generic/firmware/scp_task/generic_pwr_ctrl.c
+ * board/generic/g12b_generic/firmware/scp_task/g12b_generic_pwr_ctrl.c
  *
  * Copyright (C) 2018 Amlogic, Inc. All rights reserved.
  *
@@ -20,7 +20,7 @@
 */
 
 #include <gpio.h>
-#include "pwm_ctrl.h"
+#include "g12b_generic_pwm_ctrl.h"
 #ifdef CONFIG_CEC_WAKEUP
 #include <cec_tx_reg.h>
 #endif
@@ -76,10 +76,12 @@ static void power_off_at_24M(unsigned int suspend_from)
 		writel(readl(PERIPHS_PIN_MUX_C) & (~(0xf)), PERIPHS_PIN_MUX_C);
 	}
 
+#ifdef CONFIG_VCCKA_GPIO
 	/*set gpioao_4 low to power off vcck_a*/
-	writel(readl(AO_GPIO_O) & (~(1 << 4)), AO_GPIO_O);
-	writel(readl(AO_GPIO_O_EN_N) & (~(1 << 4)), AO_GPIO_O_EN_N);
+	writel(readl(AO_GPIO_O) & (~(1 << CONFIG_VCCKA_GPIO)), AO_GPIO_O);
+	writel(readl(AO_GPIO_O_EN_N) & (~(1 << CONFIG_VCCKA_GPIO)), AO_GPIO_O_EN_N);
 	writel(readl(AO_RTI_PIN_MUX_REG) & (~(0xf << 16)), AO_RTI_PIN_MUX_REG);
+#endif
 
 	if (!enable_wol) {
 		/*set test_n low to power off vcck_b & vcc 3.3v*/
@@ -105,11 +107,13 @@ void power_on_at_24M(unsigned int suspend_from)
 		_udelay(100);
 	}
 
+#ifdef CONFIG_VCCKA_GPIO
 	/*set gpioao_4 high to power on vcck_a*/
 	writel(readl(AO_GPIO_O) | (1 << 4), AO_GPIO_O);
 	writel(readl(AO_GPIO_O_EN_N) & (~(1 << 4)), AO_GPIO_O_EN_N);
 	writel(readl(AO_RTI_PIN_MUX_REG) & (~(0xf << 16)), AO_RTI_PIN_MUX_REG);
 	_udelay(100);
+#endif
 
 	if (!enable_5V_system_power)
 	{
@@ -271,7 +275,7 @@ static unsigned int detect_key(unsigned int suspend_from)
 	return exit_reason;
 }
 
-static void generic_pwr_op_init(struct pwr_op *pwr_op)
+static void g12b_generic_pwr_op_init(struct pwr_op *pwr_op)
 {
 	pwr_op->power_off_at_24M = power_off_at_24M;
 	pwr_op->power_on_at_24M = power_on_at_24M;

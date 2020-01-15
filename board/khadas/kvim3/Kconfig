@@ -1,5 +1,3 @@
-if TARGET_MESON_G12B
-
 config SYS_CPU
 	string
 	default "armv8"
@@ -15,8 +13,3 @@ config SYS_VENDOR
 config SYS_SOC
 	string
 	default "g12b"
-
-config SYS_CONFIG_NAME
-	default "kvim3"
-
-endif

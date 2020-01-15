@@ -53,6 +53,10 @@
 #define CONFIG_WOL_IRQ IRQ_GPIO1_NUM
 #define CONFIG_WOL_EDGE GPIO_IRQ_FALLING_EDGE
 
+/*if device have a vcck_a power enable, open it*/
+/* vcck_a: GPIOAO_4*/
+//#define CONFIG_VCCKA_GPIO GPIOAO_4
+
 //Enable ir remote wake up for bl30
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0xeb14ff00 //khadas ir --- power
 #define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0xFFFFFFFF
