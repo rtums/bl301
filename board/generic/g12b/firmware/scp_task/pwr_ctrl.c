@@ -19,9 +19,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include <generic_pwr_ctrl.c>
+#include <g12b_generic_pwr_ctrl.c>
 
 static void pwr_op_init(struct pwr_op *pwr_op)
 {
-	generic_pwr_op_init(pwr_op);
+	g12b_generic_pwr_op_init(pwr_op);
 }
