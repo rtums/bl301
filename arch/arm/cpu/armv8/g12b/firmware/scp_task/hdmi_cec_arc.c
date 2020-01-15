@@ -514,11 +514,11 @@ static void cec_give_deck_status(int dst)
 static void cec_set_osd_name(int dst)
 {
 	unsigned char msg[16];
-	unsigned char osd_len = cec_strlen(CONFIG_CEC_OSD_NAME);
+	unsigned char osd_len = cec_strlen(cec_osd_name.val);
 
 	msg[0] = ((cec_msg.log_addr & 0xf) << 4) | (dst & 0xf);
 	msg[1] = CEC_OC_SET_OSD_NAME;
-	cec_memcpy(&msg[2], CONFIG_CEC_OSD_NAME, osd_len);
+	cec_memcpy(&msg[2], cec_osd_name.val, osd_len);
 
 	remote_cec_ll_tx(msg, osd_len + 2);
 }

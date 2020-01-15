@@ -37,4 +37,26 @@
 #define CONFIG_ADC_POWER_KEY_CHAN   2  /*channel range: 0-7*/
 #define CONFIG_ADC_POWER_KEY_VAL    0  /*sample value range: 0-1023*/
 
+/*
+ * config CoreELEC config.ini key for wake up
+ * user config.ini key value: unsigned int
+*/
+struct __attribute__ ((aligned (4))) config_value_uint {
+  // default value of variable
+  unsigned int val;
+  // unique ID of the variable as hash of the ID string
+  unsigned int config_id;
+};
+
+/*
+ * config CoreELEC config.ini key for CEC OSD name
+ * user config.ini key value: char[14]
+*/
+struct __attribute__ ((aligned (4))) config_value_char14 {
+  // default value of variable
+  char val[14];
+  // unique ID of the variable as hash of the ID string
+  unsigned int config_id;
+};
+
 #endif

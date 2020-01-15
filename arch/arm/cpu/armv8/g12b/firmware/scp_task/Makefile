@@ -69,7 +69,16 @@ OBJS := $(OBJS:%=$(obj)/%)
 
 .NOTPARALLEL : all
 
-all : clean $(obj)/bl301.out $(obj)/bl301.bin
+all : clean generate-hash $(obj)/bl301.out $(obj)/bl301.bin
+
+generate-hash:
+	$(Q)rm -rf coreelec_config.h
+	$(Q)cat coreelec_config.c | \
+		awk -F'[(),]' '/.config_id\s*=\s*HASH/ {printf("%s\n", $$2)}' | \
+		while read str; do echo -n $$str | python -c 'import sys; import zlib; \
+		str=sys.stdin.read(); \
+		print("#define HASHSTR_%s 0x%08x" % (str,zlib.crc32(str)%(1<<32)))' \
+		>> coreelec_config.h; done
 
 $(obj)/bl301.bin: $(obj)/bl301.out
 	@echo "	OBJCOPY $@"
@@ -116,5 +125,6 @@ $(obj)/user_task.lds : user_task.lds
 clean:
 	@-rm -rf $(obj)/
 	@-rm -rf $(OBJS)
+	@-rm -rf coreelec_config.h
 
 -include $(wildcard $(obj)/*.d)
