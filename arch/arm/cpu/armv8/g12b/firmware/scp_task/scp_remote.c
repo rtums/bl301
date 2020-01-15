@@ -29,6 +29,10 @@
 #endif
 #define CONFIG_END 0xffffffff
 
+extern struct config_value_uint usr_pwr_key;
+extern struct config_value_uint usr_ir_proto;
+extern struct config_value_uint usr_pwr_key_mask;
+
 typedef struct reg_remote {
 	int reg;
 	unsigned int val;
@@ -40,9 +44,6 @@ typedef struct remote_pwrkeys {
 }remote_pwrkeys_t;
 
 remote_pwrkeys_t pwr_keys_list;
-unsigned int usr_pwr_key = 0xffffffff;
-unsigned int usr_pwr_key_mask = 0xffffffff;
-unsigned int usr_ir_proto = 0;
 
 //24M
 static const reg_remote RDECODEMODE_NEC[] = {
@@ -362,19 +363,22 @@ static int ir_remote_init_32k_mode(void)
 	//volatile unsigned int status,data_value;
 	int val = readl(AO_RTI_PIN_MUX_REG);
 	writel((val | (1 << 0)), AO_RTI_PIN_MUX_REG);
-	set_remote_mode(usr_ir_proto);
+	set_remote_mode(usr_ir_proto.val);
 	uart_puts("set_remote_mode 0x");
-	uart_put_hex(usr_ir_proto, 32);
+	uart_put_hex(usr_ir_proto.val, 8);
+	uart_puts("\n");
 	//status = readl(AO_MF_IR_DEC_STATUS);
 	readl(AO_MF_IR_DEC_STATUS);
 	//data_value = readl(AO_MF_IR_DEC_FRAME);
 	readl(AO_MF_IR_DEC_FRAME);
 
+#if 0
 	//step 2 : request nec_remote irq  & enable it
-	if (usr_ir_proto == 3) {
-		uart_puts("usr_ir_proto 3");
+	if (usr_ir_proto.val == 3) {
+		uart_puts("usr_ir_proto 3\n");
 		writel(readl(AO_IR_DEC_REG1)&(~(1<<15)),AO_IR_DEC_REG1);
 	}
+#endif
 	return 0;
 }
 
@@ -385,21 +389,41 @@ void init_custom_trigger(void)
 #endif
 
 static unsigned int kk[] = {
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL4
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL4,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL5
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL5,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL6
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL6,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL7
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL7,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL8
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL8,
+#endif
+#ifdef CONFIG_IR_REMOTE_POWER_UP_KEY_VAL9
 	CONFIG_IR_REMOTE_POWER_UP_KEY_VAL9,
+#endif
 };
 
 static int init_remote(void)
 {
 	uart_put_hex(readl(AO_IR_DEC_STATUS), 32);
+	uart_puts("\n");
 	uart_put_hex(readl(AO_IR_DEC_FRAME), 32);
+	uart_puts("\n");
 	init_custom_trigger();
 	return 0;
 }
@@ -441,10 +465,10 @@ static int remote_detect_key(void)
 		uart_puts("\n");
 
 		for (j = 0; j < keysdat->size; j++) {
-			if ((power_key & usr_pwr_key_mask) == (keysdat->pwrkeys[j] & usr_pwr_key_mask))
+			if ((power_key & usr_pwr_key_mask.val) == (keysdat->pwrkeys[j] & usr_pwr_key_mask.val))
 				return 1;
 		}
-		if ((power_key & usr_pwr_key_mask) == (usr_pwr_key & usr_pwr_key_mask))
+		if ((power_key & usr_pwr_key_mask.val) == (usr_pwr_key.val & usr_pwr_key_mask.val))
 			return 2;
 	}
 
@@ -460,10 +484,10 @@ static int remote_detect_key(void)
 		uart_puts("\n");
 
 		for (j = 0; j < keysdat->size; j++) {
-			if ((power_key & usr_pwr_key_mask) == (keysdat->pwrkeys[j] & usr_pwr_key_mask))
+			if ((power_key & usr_pwr_key_mask.val) == (keysdat->pwrkeys[j] & usr_pwr_key_mask.val))
 				return 1;
 		}
-		if ((power_key & usr_pwr_key_mask) == (usr_pwr_key & usr_pwr_key_mask))
+		if ((power_key & usr_pwr_key_mask.val) == (usr_pwr_key.val & usr_pwr_key_mask.val))
 			return 2;
 	}
 
