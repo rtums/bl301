@@ -85,6 +85,9 @@ void enter_suspend(unsigned int suspend_from)
 
 	exit_reason = p_pwr_op->detect_key(suspend_from);
 
+	if (p_pwr_op->power_on_at_mcu)
+		p_pwr_op->power_on_at_mcu();
+
 	if (p_pwr_op->power_on_at_24M)
 		p_pwr_op->power_on_at_24M(suspend_from);
 

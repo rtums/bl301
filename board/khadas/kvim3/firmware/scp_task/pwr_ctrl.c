@@ -106,13 +106,31 @@ static void i2c_send(unsigned char data)
 	_udelay(3);
 }
 
+static void power_on_at_mcu(void)
+{
+	// switch off system led
+	i2c_start();
+	i2c_send(0x18 << 1);
+	i2c_send(0x28);
+	i2c_send(0x00);
+	i2c_stop();
+}
+
 static void power_off_at_mcu(unsigned int shutdown)
 {
-	if(shutdown == 0) {
+	// switch system led to breath mode
+	if (shutdown == SYS_SUSPEND) {
 		i2c_start();
-		i2c_send(0x30);
-		i2c_send(0x80);
-		i2c_send(0x01);
+		i2c_send(0x18 << 1);
+		i2c_send(0x28);
+		i2c_send(0x02);
+		i2c_stop();
+	// switch off system led
+	} else if (shutdown == SYS_POWEROFF) {
+		i2c_start();
+		i2c_send(0x18 << 1);
+		i2c_send(0x28);
+		i2c_send(0x00);
 		i2c_stop();
 	}
 }
@@ -120,5 +138,6 @@ static void power_off_at_mcu(unsigned int shutdown)
 static void pwr_op_init(struct pwr_op *pwr_op)
 {
 	g12b_generic_pwr_op_init(pwr_op);
+	pwr_op->power_on_at_mcu = power_on_at_mcu;
 	pwr_op->power_off_at_mcu = power_off_at_mcu;
 }

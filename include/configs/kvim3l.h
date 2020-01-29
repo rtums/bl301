@@ -31,6 +31,7 @@
 #define CONFIG_VDDEE_SLEEP_VOLTAGE	770		// VDDEE suspend voltage
 
 /* configs for CEC */
+#define CONFIG_CEC_WAKEUP
 #define CONFIG_CEC_OSD_NAME		"KVIM3L"
 
 /*if use power button wakeup, open it*/

@@ -57,6 +57,7 @@ typedef unsigned int uint32_t;
 struct pwr_op {
 	void (*power_off_at_mcu)(unsigned int);
 	void (*power_off_at_24M)(unsigned int);
+	void (*power_on_at_mcu)(void);
 	void (*power_on_at_24M)(unsigned int);
 	void (*shut_down)(void);
 	unsigned int (*detect_key)(unsigned int);
