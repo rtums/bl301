@@ -29,10 +29,10 @@ struct config_value_uint enable_5V_system_power = {
 };
 
 #if defined(CONFIG_WOL) || defined(CONFIG_BT_WAKEUP)
-/* enable Wake-On-Lan by default set by inject_bl301 from config.ini */
+/* Wake-On-Lan set by inject_bl301 from config.ini */
 struct config_value_uint enable_wol = {
 	.config_id = HASH(config_enable_wol, wol),
-	.val = 1
+	.val = 0
 };
 #endif
 
